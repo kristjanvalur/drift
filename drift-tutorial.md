@@ -58,7 +58,7 @@ dconf tier add LOCAL --is-dev
 
 # Register all available Drift plugins in the config DB and associate
 # with all available tiers
-dconf deployable register all -t all
+drift-admin register
 ```
 
 ### Register our organization and product
@@ -80,7 +80,7 @@ Tenant names must be prefixed with the organization short name. Having the word 
 
 ```bash
 # Arguments: tenant name, product name
-dconf tenant add kd-defaultdev kd-snowfall
+driftconfig  create-tenant kd-defaultdev kd-snowfall LIVE
 ```
 At this point we have all the necessarty bits registered in our configuration database. Next steps are all about provisioning and running the actual services.
 
