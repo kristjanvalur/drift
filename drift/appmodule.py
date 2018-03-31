@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-from flask import Flask
 
-from flaskfactory import drift_app
+from flaskfactory import create_app
 
-# The global 'app' instance
-app = Flask("drift")
-drift_app(app)
+# The global 'app' instance.  Useful for deployment and testing.
+app = create_app()

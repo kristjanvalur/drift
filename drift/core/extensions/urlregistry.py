@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-from werkzeug.local import LocalProxy
+
+# store endpoints at import time here.  Register them with
+# the app when done.
+_registered_endpoints = set()
 
 
 class EndpointRegistry(object):
@@ -22,12 +25,23 @@ class EndpointRegistry(object):
 
 
 def register_endpoints(f):
-    # TODO: It is a bad pattern to import app here since it might cause the app to be created
-    from drift.appmodule import app
-    _url_registry = app.extensions['urlregistry']
-    _url_registry.register_endpoints(f)
+    # This is called at import time, at which point we do not have any single
+    # app object. Since it is done at import, it is a global state.  Store
+    # that here and apply it later.
+    _registered_endpoints.add(f)
     return f
+
 
 def register_extension(app):
     registry = EndpointRegistry(app)
     return registry
+
+
+def finalize_extension(app):
+    """
+    Once everything has registered their extensions at import time, we can
+    apply it to the app module.
+    """
+    registry = app.extensions['urlregistry']
+    for f in _registered_endpoints:
+        registry.register_endpoints(f)

@@ -9,7 +9,7 @@ import sys
 import os.path
 import time
 
-from flask import jsonify
+from flask import Flask, jsonify
 from flask_restful import Api
 from flask import make_response
 from flask.json import dumps
@@ -28,7 +28,13 @@ class AppRootNotFound(RuntimeError):
     pass
 
 
-def drift_app(app):
+# Todo, later can add different config settings here, for testing, etc.
+def create_app():
+    """
+    The canonical app creation function for flask apps.
+    """
+
+    app = Flask('drift')
 
     # Find application root and initialize paths and search path
     # for module imports
@@ -145,6 +151,7 @@ def install_modules(app):
         "\n\t".join(resources), "\n\t".join(extensions), "\n\t".join(apps)
     )
 
+    finalizers = []
     for module_name in resources + extensions:
         t = time.time()
         m = importlib.import_module(module_name)
@@ -156,9 +163,11 @@ def install_modules(app):
         elapsed = time.time() - t
         if elapsed > 0.1:
             log.warning(
-                "Extension module '%s' took %.3f seconds to initialize (import time was %.3f).",
+                "Extension module '%s' took %.3f seconds to iEnitialize (import time was %.3f).",
                 module_name, elapsed, import_time
             )
+        if hasattr(m, "finalize_extension"):
+            finalizers.append((module_name, m.finalize_extension))
 
     for module_name in apps:
         t = time.time()
@@ -184,6 +193,15 @@ def install_modules(app):
                     module_name, elapsed, import_time
                 )
 
+    # Finalize any extensions that need finalization after apps have been imported.
+    for module_name, finalize in finalizers:
+        t = time.time()
+        finalize(app)
+        elapsed = time.time() - t
+        if elapsed > 0.1:
+            log.warning(
+                "Extension module '%s' took %.3f seconds to finalize.",
+                module_name, elapsed)
 
 def _apply_patches(app):
     """
